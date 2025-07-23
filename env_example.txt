@@ -1,0 +1,9 @@
+# OpenAI API Key (Required)
+OPENAI_API_KEY=your_openai_api_key_here
+
+# AWS Configuration (Optional - defaults provided)
+AWS_REGION=us-east-1
+DYNAMODB_TABLE_NAME=nutrition_tracker
+
+# Telegram Bot Token (Already configured in config.py)
+# TELEGRAM_TOKEN=8453520975:AAGa506SHTx5NlW_JAt11HlvztDACEkflFc 
