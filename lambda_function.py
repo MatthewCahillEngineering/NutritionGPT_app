@@ -1,100 +1,88 @@
 import json
 import os
-import sys
-from bot import NutritionBot
-from database import NutritionDatabase
+import logging
+from bot_fixed import NutritionGPTBot
+from config import load_config
+
+# Configure logging
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 # Initialize bot instance
-bot = NutritionBot()
+config = load_config()
+bot = NutritionGPTBot(config)
 
 def lambda_handler(event, context):
-    """AWS Lambda handler for Telegram webhook"""
+    """
+    AWS Lambda handler for Telegram webhook
+    """
     try:
-        # Parse the incoming webhook data
-        body = json.loads(event['body'])
+        logger.info("Received event: %s", json.dumps(event))
         
-        # Process the update
+        # Parse the incoming webhook data
+        if 'body' in event:
+            body = event['body']
+            if isinstance(body, str):
+                body = json.loads(body)
+        else:
+            body = event
+            
+        # Handle Telegram webhook
         if 'message' in body:
             message = body['message']
+            logger.info(f"Processing message: {message.get('text', 'Voice message')}")
             
-            # Create a simple message object that mimics telebot's message structure
-            class SimpleMessage:
-                def __init__(self, data):
-                    self.from_user = SimpleUser(data.get('from', {}))
-                    self.text = data.get('text', '')
-                    self.voice = data.get('voice')
-                    self.message_id = data.get('message_id')
-                
-                def __str__(self):
-                    return f"Message(text='{self.text}', from_user={self.from_user})"
+            # Process the message using our bot
+            bot.process_message(message)
             
-            class SimpleUser:
-                def __init__(self, data):
-                    self.id = data.get('id')
-                    self.first_name = data.get('first_name', '')
-                    self.last_name = data.get('last_name', '')
-                    self.username = data.get('username', '')
-                
-                def __str__(self):
-                    return f"User(id={self.id}, name='{self.first_name}')"
+        elif 'callback_query' in body:
+            callback_query = body['callback_query']
+            logger.info(f"Processing callback query: {callback_query}")
             
-            # Create message object
-            msg = SimpleMessage(message)
+            # Handle callback queries if needed
+            bot.process_callback_query(callback_query)
             
-            # Process the message based on content type
-            if 'voice' in message:
-                # Handle voice message
-                bot.handle_voice_message(msg)
-            elif 'text' in message:
-                # Handle text message
-                text = message['text']
-                if text.startswith('/'):
-                    # Handle commands
-                    if text.startswith('/start') or text.startswith('/help'):
-                        bot.send_welcome(msg)
-                    elif text.startswith('/planmeals'):
-                        bot.handle_meal_plan_command(msg)
-                    elif text.startswith('/shopping'):
-                        bot.handle_shopping_list(msg)
-                    elif text.startswith('/addtolist'):
-                        bot.handle_add_to_list(msg)
-                    elif text.startswith('/removetolist'):
-                        bot.handle_remove_from_list(msg)
-                    elif text.startswith('/clear'):
-                        bot.handle_clear_list(msg)
-                    else:
-                        bot.handle_text_message(msg)
-                else:
-                    bot.handle_text_message(msg)
-        
         return {
             'statusCode': 200,
             'body': json.dumps('OK')
         }
         
     except Exception as e:
-        print(f"Error in lambda_handler: {e}")
+        logger.error(f"Error in lambda_handler: {str(e)}")
         return {
             'statusCode': 500,
             'body': json.dumps(f'Error: {str(e)}')
         }
 
-# For local testing
-if __name__ == "__main__":
-    # Simulate a webhook event
-    test_event = {
-        'body': json.dumps({
-            'message': {
-                'message_id': 1,
-                'from': {
-                    'id': 123456789,
-                    'first_name': 'Test',
-                    'username': 'testuser'
-                },
-                'text': '/start'
+def set_webhook(event, context):
+    """
+    Set up Telegram webhook URL
+    """
+    try:
+        webhook_url = event.get('webhook_url')
+        if not webhook_url:
+            return {
+                'statusCode': 400,
+                'body': json.dumps('webhook_url parameter required')
             }
-        })
-    }
-    
-    result = lambda_handler(test_event, None)
-    print(result) 
+            
+        # Set webhook using bot instance
+        success = bot.set_webhook(webhook_url)
+        
+        if success:
+            return {
+                'statusCode': 200,
+                'body': json.dumps(f'Webhook set successfully to {webhook_url}')
+            }
+        else:
+            return {
+                'statusCode': 500,
+                'body': json.dumps('Failed to set webhook')
+            }
+            
+    except Exception as e:
+        logger.error(f"Error setting webhook: {str(e)}")
+        return {
+            'statusCode': 500,
+            'body': json.dumps(f'Error: {str(e)}')
+        } 

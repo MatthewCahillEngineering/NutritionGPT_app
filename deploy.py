@@ -1,273 +1,205 @@
 #!/usr/bin/env python3
 """
-Deployment script for NutritionGPT Telegram Bot
-Deploys to AWS Lambda with DynamoDB
+AWS Lambda Deployment Script for NutritionGPT Bot
 """
-
+import os
+import shutil
+import subprocess
+import zipfile
 import boto3
 import json
-import zipfile
-import os
-import sys
-from botocore.exceptions import ClientError
+from pathlib import Path
 
 def create_deployment_package():
-    """Create a ZIP file for Lambda deployment"""
+    """Create a deployment package for AWS Lambda"""
     print("📦 Creating deployment package...")
     
-    # Files to include in the package
-    files_to_include = [
-        'bot.py',
-        'config.py',
-        'database.py',
-        'ai_service.py',
-        'lambda_function.py',
-        'requirements.txt'
+    # Create deployment directory
+    deploy_dir = "deployment"
+    if os.path.exists(deploy_dir):
+        shutil.rmtree(deploy_dir)
+    os.makedirs(deploy_dir)
+    
+    # Copy source files
+    source_files = [
+        "lambda_function.py",
+        "bot_fixed.py", 
+        "ai_service.py",
+        "config.py",
+        "requirements.txt"
     ]
     
+    for file in source_files:
+        if os.path.exists(file):
+            shutil.copy2(file, deploy_dir)
+            print(f"✅ Copied {file}")
+    
+    # Install dependencies
+    print("📥 Installing dependencies...")
+    subprocess.run([
+        "pip", "install", "-r", "requirements.txt", 
+        "-t", deploy_dir, "--platform", "manylinux2014_x86_64",
+        "--only-binary=all"
+    ], check=True)
+    
     # Create ZIP file
-    with zipfile.ZipFile('nutrition_bot.zip', 'w') as zipf:
-        for file in files_to_include:
-            if os.path.exists(file):
-                zipf.write(file)
-                print(f"  ✅ Added {file}")
-            else:
-                print(f"  ❌ Missing {file}")
+    zip_name = "nutritiongpt-lambda.zip"
+    with zipfile.ZipFile(zip_name, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        for root, dirs, files in os.walk(deploy_dir):
+            for file in files:
+                file_path = os.path.join(root, file)
+                arcname = os.path.relpath(file_path, deploy_dir)
+                zipf.write(file_path, arcname)
     
-    print("✅ Deployment package created: nutrition_bot.zip")
-    return 'nutrition_bot.zip'
+    print(f"✅ Created deployment package: {zip_name}")
+    return zip_name
 
-def create_iam_role():
-    """Create IAM role for Lambda function"""
-    print("🔐 Creating IAM role...")
+def deploy_to_lambda(function_name="NutritionGPTBot", zip_file="nutritiongpt-lambda.zip"):
+    """Deploy the package to AWS Lambda"""
+    print(f"🚀 Deploying to AWS Lambda function: {function_name}")
     
-    iam = boto3.client('iam')
-    role_name = 'NutritionBotLambdaRole'
-    
-    # Trust policy for Lambda
-    trust_policy = {
-        "Version": "2012-10-17",
-        "Statement": [
-            {
-                "Effect": "Allow",
-                "Principal": {
-                    "Service": "lambda.amazonaws.com"
-                },
-                "Action": "sts:AssumeRole"
-            }
-        ]
-    }
-    
-    # Permission policy
-    permission_policy = {
-        "Version": "2012-10-17",
-        "Statement": [
-            {
-                "Effect": "Allow",
-                "Action": [
-                    "logs:CreateLogGroup",
-                    "logs:CreateLogStream",
-                    "logs:PutLogEvents"
-                ],
-                "Resource": "arn:aws:logs:*:*:*"
-            },
-            {
-                "Effect": "Allow",
-                "Action": [
-                    "dynamodb:GetItem",
-                    "dynamodb:PutItem",
-                    "dynamodb:UpdateItem",
-                    "dynamodb:DeleteItem",
-                    "dynamodb:Query",
-                    "dynamodb:Scan",
-                    "dynamodb:CreateTable",
-                    "dynamodb:DescribeTable"
-                ],
-                "Resource": "arn:aws:dynamodb:*:*:table/nutrition_tracker"
-            }
-        ]
-    }
-    
-    try:
-        # Create role
-        response = iam.create_role(
-            RoleName=role_name,
-            AssumeRolePolicyDocument=json.dumps(trust_policy),
-            Description='Role for NutritionGPT Lambda function'
-        )
-        
-        # Attach permission policy
-        iam.put_role_policy(
-            RoleName=role_name,
-            PolicyName='NutritionBotPolicy',
-            PolicyDocument=json.dumps(permission_policy)
-        )
-        
-        # Attach basic Lambda execution role
-        iam.attach_role_policy(
-            RoleName=role_name,
-            PolicyArn='arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
-        )
-        
-        print(f"✅ IAM role created: {role_name}")
-        return response['Role']['Arn']
-        
-    except ClientError as e:
-        if e.response['Error']['Code'] == 'EntityAlreadyExists':
-            print(f"✅ IAM role already exists: {role_name}")
-            return f"arn:aws:iam::{boto3.client('sts').get_caller_identity()['Account']}:role/{role_name}"
-        else:
-            print(f"❌ Error creating IAM role: {e}")
-            return None
-
-def deploy_lambda_function(zip_file, role_arn):
-    """Deploy Lambda function"""
-    print("🚀 Deploying Lambda function...")
-    
+    # Initialize AWS Lambda client
     lambda_client = boto3.client('lambda')
-    function_name = 'NutritionGPTBot'
     
     try:
-        # Read ZIP file
-        with open(zip_file, 'rb') as f:
-            zip_content = f.read()
-        
         # Check if function exists
         try:
             lambda_client.get_function(FunctionName=function_name)
-            print("📝 Updating existing function...")
+            print(f"📝 Updating existing function: {function_name}")
             
             # Update function code
-            lambda_client.update_function_code(
-                FunctionName=function_name,
-                ZipFile=zip_content
-            )
+            with open(zip_file, 'rb') as f:
+                lambda_client.update_function_code(
+                    FunctionName=function_name,
+                    ZipFile=f.read()
+                )
             
             # Update function configuration
             lambda_client.update_function_configuration(
                 FunctionName=function_name,
-                Runtime='python3.9',
+                Runtime='python3.12',
                 Handler='lambda_function.lambda_handler',
                 Timeout=30,
-                MemorySize=256,
+                MemorySize=512,
                 Environment={
                     'Variables': {
-                        'OPENAI_API_KEY': os.getenv('OPENAI_API_KEY', ''),
-                        'AWS_REGION': os.getenv('AWS_REGION', 'us-east-1'),
-                        'DYNAMODB_TABLE_NAME': 'nutrition_tracker'
+                        'TELEGRAM_BOT_TOKEN': os.getenv('TELEGRAM_BOT_TOKEN'),
+                        'OPENAI_API_KEY': os.getenv('OPENAI_API_KEY')
                     }
                 }
             )
             
-        except ClientError as e:
-            if e.response['Error']['Code'] == 'ResourceNotFoundException':
-                print("🆕 Creating new function...")
-                
-                # Create function
+        except lambda_client.exceptions.ResourceNotFoundException:
+            print(f"🆕 Creating new function: {function_name}")
+            
+            # Create new function
+            with open(zip_file, 'rb') as f:
                 lambda_client.create_function(
                     FunctionName=function_name,
-                    Runtime='python3.9',
-                    Role=role_arn,
+                    Runtime='python3.12',
+                    Role='arn:aws:iam::YOUR_ACCOUNT_ID:role/lambda-execution-role',  # You'll need to create this
                     Handler='lambda_function.lambda_handler',
-                    Code={'ZipFile': zip_content},
+                    Code={'ZipFile': f.read()},
                     Description='NutritionGPT Telegram Bot',
                     Timeout=30,
-                    MemorySize=256,
+                    MemorySize=512,
                     Environment={
                         'Variables': {
-                            'OPENAI_API_KEY': os.getenv('OPENAI_API_KEY', ''),
-                            'AWS_REGION': os.getenv('AWS_REGION', 'us-east-1'),
-                            'DYNAMODB_TABLE_NAME': 'nutrition_tracker'
+                            'TELEGRAM_BOT_TOKEN': os.getenv('TELEGRAM_BOT_TOKEN'),
+                            'OPENAI_API_KEY': os.getenv('OPENAI_API_KEY')
                         }
                     }
                 )
-            else:
-                raise e
         
-        print(f"✅ Lambda function deployed: {function_name}")
-        return function_name
+        print(f"✅ Successfully deployed to {function_name}")
+        return True
         
     except Exception as e:
-        print(f"❌ Error deploying Lambda function: {e}")
-        return None
+        print(f"❌ Deployment failed: {e}")
+        return False
 
-def setup_webhook(function_name):
-    """Setup Telegram webhook"""
+def set_webhook_url(function_name="NutritionGPTBot"):
+    """Set the Telegram webhook URL to point to the Lambda function"""
     print("🔗 Setting up Telegram webhook...")
     
     # Get function URL
     lambda_client = boto3.client('lambda')
     
     try:
-        # Create function URL
-        response = lambda_client.create_function_url_config(
-            FunctionName=function_name,
-            AuthType='NONE',
-            Cors={
-                'AllowCredentials': False,
-                'AllowHeaders': ['*'],
-                'AllowMethods': ['*'],
-                'AllowOrigins': ['*'],
-                'ExposeHeaders': ['*'],
-                'MaxAge': 86400
-            }
-        )
+        # Create function URL if it doesn't exist
+        try:
+            lambda_client.get_function_url_config(FunctionName=function_name)
+        except lambda_client.exceptions.ResourceNotFoundException:
+            lambda_client.create_function_url_config(
+                FunctionName=function_name,
+                AuthType='NONE',
+                Cors={
+                    'AllowCredentials': False,
+                    'AllowHeaders': ['*'],
+                    'AllowMethods': ['*'],
+                    'AllowOrigins': ['*'],
+                    'ExposeHeaders': ['*'],
+                    'MaxAge': 86400
+                }
+            )
         
-        webhook_url = response['FunctionUrl']
-        print(f"✅ Function URL: {webhook_url}")
+        # Get the function URL
+        response = lambda_client.get_function_url_config(FunctionName=function_name)
+        function_url = response['FunctionUrl']
+        
+        print(f"📱 Function URL: {function_url}")
         
         # Set Telegram webhook
+        bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
+        webhook_url = f"https://api.telegram.org/bot{bot_token}/setWebhook"
+        
         import requests
-        telegram_token = "8453520975:AAGa506SHTx5NlW_JAt11HlvztDACEkflFc"
-        webhook_setup_url = f"https://api.telegram.org/bot{telegram_token}/setWebhook"
+        webhook_data = {
+            'url': function_url,
+            'allowed_updates': ['message', 'callback_query']
+        }
         
-        webhook_response = requests.post(webhook_setup_url, json={
-            'url': webhook_url
-        })
+        response = requests.post(webhook_url, json=webhook_data)
         
-        if webhook_response.status_code == 200:
-            print("✅ Telegram webhook set successfully!")
+        if response.status_code == 200:
+            print("✅ Webhook set successfully!")
+            return function_url
         else:
-            print(f"❌ Error setting webhook: {webhook_response.text}")
-        
-        return webhook_url
-        
+            print(f"❌ Failed to set webhook: {response.text}")
+            return None
+            
     except Exception as e:
-        print(f"❌ Error setting up webhook: {e}")
+        print(f"❌ Error setting webhook: {e}")
         return None
 
 def main():
     """Main deployment function"""
-    print("🚀 Starting NutritionGPT Bot Deployment...")
+    print("🤖 NutritionGPT Bot - AWS Lambda Deployment")
+    print("=" * 50)
     
-    # Check for OpenAI API key
-    if not os.getenv('OPENAI_API_KEY'):
-        print("❌ OPENAI_API_KEY environment variable not set!")
-        print("Please set it: export OPENAI_API_KEY=your_key_here")
-        return
+    # Check environment variables
+    required_vars = ['TELEGRAM_BOT_TOKEN', 'OPENAI_API_KEY']
+    missing_vars = [var for var in required_vars if not os.getenv(var)]
+    
+    if missing_vars:
+        print(f"❌ Missing environment variables: {missing_vars}")
+        print("💡 Please set them in your environment or .env file")
+        return False
     
     # Create deployment package
     zip_file = create_deployment_package()
     
-    # Create IAM role
-    role_arn = create_iam_role()
-    if not role_arn:
-        print("❌ Failed to create IAM role")
-        return
+    # Deploy to Lambda
+    if deploy_to_lambda(zip_file=zip_file):
+        # Set webhook
+        function_url = set_webhook_url()
+        if function_url:
+            print("\n🎉 Deployment successful!")
+            print(f"📱 Your bot is now running at: {function_url}")
+            print("💡 Test your bot on Telegram!")
+            return True
     
-    # Deploy Lambda function
-    function_name = deploy_lambda_function(zip_file, role_arn)
-    if not function_name:
-        print("❌ Failed to deploy Lambda function")
-        return
-    
-    # Setup webhook
-    webhook_url = setup_webhook(function_name)
-    
-    print("\n🎉 Deployment completed successfully!")
-    print(f"📱 Your bot is now live at: t.me/NutritionGPTAI_bot")
-    print(f"🔗 Webhook URL: {webhook_url}")
-    print("\n💡 Test your bot by sending /start to @NutritionGPTAI_bot")
+    return False
 
 if __name__ == "__main__":
     main() 
