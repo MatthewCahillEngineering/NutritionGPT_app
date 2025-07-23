@@ -1,175 +1,118 @@
-# 🤖 NutritionGPT - AI Nutrition Assistant Bot
+# NutritionGPT Bot
 
-A Telegram bot powered by OpenAI that generates personalized meal plans, manages shopping lists, and transcribes voice commands for nutrition planning.
+A Telegram bot that generates personalized meal plans and shopping lists using OpenAI's GPT-4 and Whisper for voice transcription.
 
 ## 🚀 Features
 
-- **🍽️ AI Meal Planning**: Generate 1-7 day meal plans with protein-focused, healthy recipes
-- **🛒 Smart Shopping Lists**: Automatically extract ingredients from meal plans
-- **🎤 Voice Commands**: Send voice messages to plan meals and manage lists
-- **📊 Nutrition Tracking**: Protein and calorie information for each meal
-- **⚡ Real-time Processing**: Instant meal plan generation and voice transcription
-
-## 🛠️ Tech Stack
-
-- **Python 3.12+**
-- **Telegram Bot API** (pyTelegramBotAPI)
-- **OpenAI GPT-4** (Meal planning & voice transcription)
-- **OpenAI Whisper** (Voice-to-text)
-- **AWS Lambda** (Deployment ready)
-- **DynamoDB** (Database ready)
-
-## 📋 Commands
-
-| Command | Description |
-|---------|-------------|
-| `/start` | Welcome message and help |
-| `/planmeals` | Generate 1-day meal plan |
-| `/planmeals 3` | Generate 3-day meal plan |
-| `/voiceplan` | Send voice message for meal planning |
-| `/shopping` | View shopping list |
-| `/addtolist <item>` | Add item to shopping list |
-| `/removetolist <item>` | Remove item from shopping list |
-| `/clear` | Clear shopping list |
-
-## 🎤 Voice Commands
-
-- "Plan meals for today"
-- "Create a 3-day meal plan"
-- "Add chicken to shopping list"
-- "I want high protein meals"
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Python 3.12+
-- Telegram Bot Token
-- OpenAI API Key
-
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone <your-repo-url>
-   cd Ai_nutrition_app
-   ```
-
-2. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Set up environment variables**
-   ```bash
-   # Copy env_vars.txt and add your API keys
-   cp env_vars.txt .env
-   # Edit .env with your actual API keys
-   ```
-
-4. **Run the bot**
-   ```bash
-   python bot_fixed.py
-   ```
-
-## 🔧 Configuration
-
-Create a `.env` file with your API keys:
-
-```env
-# OpenAI API Key
-OPENAI_API_KEY=your_openai_api_key_here
-
-# Telegram Bot Token
-TELEGRAM_TOKEN=your_telegram_bot_token_here
-
-# AWS Configuration (for deployment)
-AWS_REGION=us-east-1
-DYNAMODB_TABLE_NAME=nutrition_tracker
-```
+- **Meal Planning**: Generate personalized meal plans with nutrition information
+- **Shopping Lists**: Automatically create shopping lists from meal plans
+- **Voice Commands**: Send voice messages to plan meals
+- **Nutrition Tracking**: Track protein and calorie content
+- **Easy Setup**: Simple configuration with environment variables
 
 ## 📁 Project Structure
 
 ```
-Ai_nutrition_app/
-├── bot_fixed.py          # Main bot application
-├── ai_service.py         # OpenAI integration
-├── config.py             # Configuration management
-├── database.py           # Database operations (DynamoDB ready)
-├── lambda_function.py    # AWS Lambda handler
-├── requirements.txt      # Python dependencies
-├── .gitignore           # Git ignore rules
-├── README.md            # This file
-└── env_vars.txt         # Environment variables template
+NutritionGPT_app/
+├── bot_main.py          # Main bot application (working version)
+├── ai_service.py        # OpenAI integration for meal plans and voice
+├── config.py           # Environment variable configuration
+├── requirements.txt    # Python dependencies
+├── env_vars.txt       # Environment variables (API keys)
+├── env_example.txt    # Example environment variables
+├── README.md          # This file
+├── QUICKSTART.md      # Quick start guide
+└── .gitignore         # Git ignore rules
 ```
 
-## 🚀 Deployment
+## 🛠️ Setup
 
-### Local Development
+### 1. Install Dependencies
 ```bash
-python bot_fixed.py
+pip install -r requirements.txt
 ```
 
-### AWS Lambda Deployment
-1. Create Lambda function
-2. Upload deployment package
-3. Configure environment variables
-4. Set up API Gateway for webhook
-
-## 💡 Usage Examples
-
-### Generate Meal Plan
+### 2. Configure Environment Variables
+Copy `env_example.txt` to `env_vars.txt` and add your API keys:
 ```
-User: /planmeals 3
-Bot: 🍽️ Your 3-Day Meal Plan
-     Day 1
-     • Breakfast: Greek Yogurt Parfait
-       📊 25g protein • 300 calories
-       🥘 Greek yogurt, berries, almonds (+1 more)
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+OPENAI_API_KEY=your_openai_api_key
 ```
 
-### Voice Command
+### 3. Run the Bot
+```bash
+python bot_main.py
 ```
-User: [Voice message] "Plan meals for today"
-Bot: 🎤 You said: plan meals for today
-     🍽️ Generating your 1-day meal plan...
-     [Meal plan response]
-     🛒 Shopping list updated! Use /shopping to view it.
-```
+
+## 🎯 Usage
+
+### Commands
+- `/start` - Welcome message and instructions
+- `/planmeals` - Generate a meal plan
+- `/shopping` - Show current shopping list
+
+### Voice Commands
+- Send a voice message saying "plan meals" to generate a meal plan
+
+## 🔧 Configuration
+
+The bot uses environment variables for configuration:
+- `TELEGRAM_BOT_TOKEN`: Your Telegram bot token from @BotFather
+- `OPENAI_API_KEY`: Your OpenAI API key
+
+## 📱 Bot Features
+
+### Meal Planning
+- Generates 3 meals (breakfast, lunch, dinner) + 1 snack
+- Includes protein and calorie information
+- Focuses on healthy, high-protein options
+
+### Shopping Lists
+- Automatically extracts ingredients from meal plans
+- Removes duplicates and formats for easy reading
+- Stores shopping lists per user
+
+### Voice Integration
+- Uses OpenAI Whisper for voice transcription
+- Supports natural language commands
+- Processes voice messages for meal planning
+
+## 🚀 Quick Start
+
+1. **Get API Keys**:
+   - Telegram Bot Token: Message @BotFather on Telegram
+   - OpenAI API Key: Sign up at https://platform.openai.com
+
+2. **Set up environment**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Configure bot**:
+   - Edit `env_vars.txt` with your API keys
+
+4. **Run bot**:
+   ```bash
+   python bot_main.py
+   ```
+
+5. **Test bot**:
+   - Find your bot on Telegram
+   - Send `/start` to begin
+
+## 💡 Tips
+
+- The bot works best with clear voice commands
+- Shopping lists are stored per user session
+- Meal plans are generated fresh each time
+- Voice transcription works with various accents
 
 ## 🔒 Security
 
-- API keys stored in environment variables
-- No hardcoded secrets in code
-- Secure voice file handling
-- Input validation and sanitization
+- API keys are stored in `env_vars.txt` (not committed to git)
+- Environment variables are loaded securely
+- No sensitive data is logged
 
-## 📈 Future Enhancements
+## 📞 Support
 
-- [ ] User preferences and dietary restrictions
-- [ ] Meal plan history and favorites
-- [ ] Nutritional goal tracking
-- [ ] Recipe sharing and community features
-- [ ] Integration with grocery delivery services
-- [ ] Multi-language support
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🆘 Support
-
-For support, please open an issue on GitHub or contact the development team.
-
----
-
-**Version**: v0.1.0  
-**Last Updated**: July 2024  
-**Status**: ✅ Production Ready 
+For issues or questions, check the logs in the terminal when running the bot. 

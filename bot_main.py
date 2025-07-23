@@ -51,9 +51,15 @@ class NutritionGPTBot:
         def handle_text(message):
             self.handle_text_message(message)
     
-    def process_message(self, message_data):
+    def process_message(self, webhook_data):
         """Process message from Lambda webhook"""
         try:
+            # Extract message from webhook data
+            if 'message' in webhook_data:
+                message_data = webhook_data['message']
+            else:
+                message_data = webhook_data
+                
             # Create a message object from the webhook data
             message = telebot.types.Message.de_json(message_data)
             
@@ -68,15 +74,27 @@ class NutritionGPTBot:
                     
         except Exception as e:
             logger.error(f"Error processing message: {e}")
+            return "Error processing message"
+        
+        return "OK"
     
-    def process_callback_query(self, callback_data):
+    def process_callback_query(self, webhook_data):
         """Process callback queries from Lambda webhook"""
         try:
+            # Extract callback query from webhook data
+            if 'callback_query' in webhook_data:
+                callback_data = webhook_data['callback_query']
+            else:
+                callback_data = webhook_data
+                
             callback_query = telebot.types.CallbackQuery.de_json(callback_data)
             # Handle callback queries if needed
             logger.info(f"Received callback query: {callback_query.data}")
         except Exception as e:
             logger.error(f"Error processing callback query: {e}")
+            return "Error processing callback query"
+        
+        return "OK"
     
     def handle_command(self, message):
         """Handle bot commands"""
@@ -333,9 +351,22 @@ Ready to start? Try `/planmeals` or send a voice message!
             print(f"Error formatting meal plan: {e}")
             return f"🍽️ **{days}-Day Meal Plan Generated!**\n\n✅ Your meal plan has been created and shopping list updated.\n\n💡 Use `/shopping` to view your ingredients list."
     
-    def set_webhook(self, webhook_url):
+    def set_webhook(self, webhook_url=None):
         """Set Telegram webhook URL"""
         try:
+            if webhook_url is None:
+                # Get the Lambda function URL from environment or construct it
+                import boto3
+                lambda_client = boto3.client('lambda')
+                function_name = 'NutritionGPTBot'
+                
+                try:
+                    response = lambda_client.get_function_url_config(FunctionName=function_name)
+                    webhook_url = response['FunctionUrl']
+                except:
+                    # Fallback: construct the URL
+                    webhook_url = f"https://x64pdv7ny2palphmykupnu2fwe0mjpvz.lambda-url.us-east-1.on.aws/"
+            
             result = self.bot.set_webhook(url=webhook_url)
             logger.info(f"Webhook set successfully: {result}")
             return True
