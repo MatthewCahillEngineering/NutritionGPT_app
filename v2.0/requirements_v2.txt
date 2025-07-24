@@ -1,0 +1,32 @@
+# Core AI and LangChain dependencies
+langchain==0.1.0
+langchain-openai==0.0.5
+langchain-community==0.0.10
+openai==1.12.0
+
+# Vector database and embeddings
+chromadb==0.4.22
+faiss-cpu==1.7.4
+
+# Data validation and processing
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# HTTP requests and API handling
+requests==2.31.0
+httpx==0.26.0
+
+# Date and time handling
+python-dateutil==2.8.2
+
+# AWS integration
+boto3==1.34.0
+botocore==1.34.0
+
+# Logging and monitoring
+structlog==23.2.0
+
+# Optional: For advanced features
+# redis==5.0.1  # For persistent memory storage
+# celery==5.3.4  # For scheduled tasks
+# sqlalchemy==2.0.23  # For database storage 

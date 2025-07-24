@@ -1,0 +1,15 @@
+# Configuration Template - Replace with your actual values
+# Telegram Bot Token
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
+
+# OpenAI API Key
+OPENAI_API_KEY=your_openai_api_key_here
+
+# AWS Lambda Function URL
+LAMBDA_FUNCTION_URL=https://your-lambda-function-url.amazonaws.com/prod
+
+# Webhook URL
+WEBHOOK_URL=https://your-lambda-function-url.amazonaws.com/prod/webhook
+
+# Set webhook command
+# https://api.telegram.org/botYOUR_BOT_TOKEN/setWebhook?url=YOUR_WEBHOOK_URL
