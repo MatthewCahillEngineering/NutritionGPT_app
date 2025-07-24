@@ -19,7 +19,7 @@ class NutritionGPTBot:
         """Initialize the bot with configuration"""
         self.config = config
         self.bot = telebot.TeleBot(config['telegram_bot_token'])
-        self.ai_service = AIService(config['openai_api_key'])
+        self.ai_service = AIService()  # AIService gets API key from config automatically
         
         # Local storage for user data (in production, use DynamoDB)
         self.local_storage = {}

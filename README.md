@@ -1,118 +1,134 @@
-# NutritionGPT Bot
+# NutritionGPT Bot v1.0
 
-A Telegram bot that generates personalized meal plans and shopping lists using OpenAI's GPT-4 and Whisper for voice transcription.
+A Telegram bot that provides personalized nutrition advice, meal planning, and shopping list generation using OpenAI's GPT models.
 
 ## 🚀 Features
 
-- **Meal Planning**: Generate personalized meal plans with nutrition information
-- **Shopping Lists**: Automatically create shopping lists from meal plans
-- **Voice Commands**: Send voice messages to plan meals
-- **Nutrition Tracking**: Track protein and calorie content
-- **Easy Setup**: Simple configuration with environment variables
+- **Meal Planning**: Generate personalized meal plans based on user preferences
+- **Shopping Lists**: Create organized shopping lists from meal plans
+- **Voice Commands**: Support for voice messages (transcription)
+- **Nutrition Advice**: Get healthy eating tips and recommendations
+- **Serverless Architecture**: Built on AWS Lambda for scalability
+
+## 📋 Commands
+
+- `/start` - Welcome message and bot introduction
+- `/planmeals` - Generate a personalized meal plan
+- `/shopping` - Create shopping list (coming soon)
+- Voice messages - Say "plan meals" or similar phrases
+
+## 🏗️ Architecture
+
+### AWS Services Used
+- **AWS Lambda**: Serverless function execution
+- **API Gateway**: HTTP endpoint for webhook
+- **CloudWatch**: Logging and monitoring
+- **IAM**: Permissions and roles
+
+### Key Components
+- `lambda_function_simple.py` - Main Lambda function (v1.0)
+- `lambda_function_v2.py` - Advanced version with full features
+- Deployment scripts for easy updates
+- Comprehensive logging and error handling
+
+## 🚀 Deployment
+
+### Prerequisites
+- AWS CLI configured
+- Python 3.12+
+- Telegram Bot Token
+- OpenAI API Key
+
+### Quick Deploy
+```bash
+# Deploy simplified version (recommended)
+python deploy_simple.py
+
+# Deploy full version (if needed)
+python deploy_to_aws.py
+```
+
+### Manual Setup
+1. Create Lambda function in AWS Console
+2. Set environment variables:
+   - `TELEGRAM_BOT_TOKEN`
+   - `OPENAI_API_KEY`
+3. Create API Gateway with `/webhook` endpoint
+4. Set webhook URL in Telegram
 
 ## 📁 Project Structure
 
 ```
-NutritionGPT_app/
-├── bot_main.py          # Main bot application (working version)
-├── ai_service.py        # OpenAI integration for meal plans and voice
-├── config.py           # Environment variable configuration
-├── requirements.txt    # Python dependencies
-├── env_vars.txt       # Environment variables (API keys)
-├── env_example.txt    # Example environment variables
-├── README.md          # This file
-├── QUICKSTART.md      # Quick start guide
-└── .gitignore         # Git ignore rules
+├── lambda_function_simple.py    # Main Lambda function (v1.0)
+├── lambda_function_v2.py        # Advanced version
+├── deploy_simple.py             # Simplified deployment script
+├── deploy_to_aws.py             # Full deployment script
+├── requirements_simple.txt      # Minimal dependencies
+├── requirements.txt             # Full dependencies
+├── DEPLOYMENT_LOG.md           # Deployment troubleshooting guide
+├── MANUAL_API_GATEWAY_SETUP.md # Manual setup instructions
+└── README.md                   # This file
 ```
 
-## 🛠️ Setup
+## 🔧 Troubleshooting
 
-### 1. Install Dependencies
+### Common Issues
+1. **Pydantic Dependencies**: Use `lambda_function_simple.py` to avoid dependency issues
+2. **Webhook Setup**: Follow `MANUAL_API_GATEWAY_SETUP.md`
+3. **Permission Errors**: Check IAM roles and user permissions
+4. **Event Structure**: Lambda receives Telegram updates directly, not wrapped
+
+### Debug Tools
+- `check_lambda.py` - Comprehensive Lambda diagnostics
+- `simple_check.py` - Quick status check
+- `test_webhook.py` - Webhook testing
+- CloudWatch logs for detailed error tracking
+
+## 📊 Version History
+
+### v1.0 (Current)
+- ✅ Basic meal planning functionality
+- ✅ Telegram integration working
+- ✅ AWS Lambda deployment successful
+- ✅ Simplified architecture for reliability
+- ✅ Comprehensive error handling
+
+### Planned Features
+- Shopping list generation
+- User preferences storage
+- Advanced meal customization
+- Nutritional analysis
+- Recipe suggestions
+
+## 🛠️ Development
+
+### Local Testing
 ```bash
-pip install -r requirements.txt
+# Test the Lambda function locally
+python lambda_function_simple.py
+
+# Test webhook endpoint
+python test_webhook.py
 ```
 
-### 2. Configure Environment Variables
-Copy `env_example.txt` to `env_vars.txt` and add your API keys:
-```
-TELEGRAM_BOT_TOKEN=your_telegram_bot_token
-OPENAI_API_KEY=your_openai_api_key
-```
-
-### 3. Run the Bot
-```bash
-python bot_main.py
-```
-
-## 🎯 Usage
-
-### Commands
-- `/start` - Welcome message and instructions
-- `/planmeals` - Generate a meal plan
-- `/shopping` - Show current shopping list
-
-### Voice Commands
-- Send a voice message saying "plan meals" to generate a meal plan
-
-## 🔧 Configuration
-
-The bot uses environment variables for configuration:
-- `TELEGRAM_BOT_TOKEN`: Your Telegram bot token from @BotFather
-- `OPENAI_API_KEY`: Your OpenAI API key
-
-## 📱 Bot Features
-
-### Meal Planning
-- Generates 3 meals (breakfast, lunch, dinner) + 1 snack
-- Includes protein and calorie information
-- Focuses on healthy, high-protein options
-
-### Shopping Lists
-- Automatically extracts ingredients from meal plans
-- Removes duplicates and formats for easy reading
-- Stores shopping lists per user
-
-### Voice Integration
-- Uses OpenAI Whisper for voice transcription
-- Supports natural language commands
-- Processes voice messages for meal planning
-
-## 🚀 Quick Start
-
-1. **Get API Keys**:
-   - Telegram Bot Token: Message @BotFather on Telegram
-   - OpenAI API Key: Sign up at https://platform.openai.com
-
-2. **Set up environment**:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Configure bot**:
-   - Edit `env_vars.txt` with your API keys
-
-4. **Run bot**:
-   ```bash
-   python bot_main.py
-   ```
-
-5. **Test bot**:
-   - Find your bot on Telegram
-   - Send `/start` to begin
-
-## 💡 Tips
-
-- The bot works best with clear voice commands
-- Shopping lists are stored per user session
-- Meal plans are generated fresh each time
-- Voice transcription works with various accents
-
-## 🔒 Security
-
-- API keys are stored in `env_vars.txt` (not committed to git)
-- Environment variables are loaded securely
-- No sensitive data is logged
+### Adding Features
+1. Update `lambda_function_simple.py`
+2. Test locally
+3. Deploy with `python quick_deploy.py`
+4. Monitor CloudWatch logs
 
 ## 📞 Support
 
-For issues or questions, check the logs in the terminal when running the bot. 
+For issues or questions:
+1. Check CloudWatch logs first
+2. Review `DEPLOYMENT_LOG.md` for common solutions
+3. Test with diagnostic scripts
+4. Check webhook status in Telegram
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+---
+
+**NutritionGPT Bot v1.0** - Making healthy eating easier, one meal at a time! 🍎🥗 
